@@ -28,13 +28,13 @@ class Embedding {
 
   Map<String, dynamic> toMap() {
     return {
-      'embedding': embedding,
+      'e': embedding,
     };
   }
 
   factory Embedding.fromMap(Map<String, dynamic> map) {
     return Embedding(
-      embedding: List<double>.from(map['embedding']),
+      embedding: List<double>.from(map['e']),
     );
   }
 
