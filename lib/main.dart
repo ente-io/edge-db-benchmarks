@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:developer' as dev;
 
+import 'package:edge_db_benchmarks/databases/isar_db.dart';
 import 'package:edge_db_benchmarks/databases/object_box_db.dart';
 import 'package:edge_db_benchmarks/databases/sqlite_db.dart';
 import 'package:edge_db_benchmarks/models/embedding.dart';
@@ -14,6 +15,8 @@ void main() async {
     embeddings.add(Embedding(embedding: getRandom512DoubleList()));
   }
   await benchmarkSqlite(embeddings);
+  await benchmarkObjectBox(embeddings);
+  await benchmarkIsar(embeddings);
 }
 
 const count = 100000;
@@ -46,6 +49,21 @@ Future<void> benchmarkObjectBox(List<Embedding> embeddings) async {
   stopwatch.stop();
   dev.log(
       'ObjectBox: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms');
+}
+
+Future<void> benchmarkIsar(List<Embedding> embeddings) async {
+  await IsarDB.instance.init();
+  final stopwatch = Stopwatch()..start();
+  await IsarDB.instance.putMany(embeddings);
+  stopwatch.stop();
+  dev.log(
+      'Isar: $count embeddings inserted in ${stopwatch.elapsedMilliseconds} ms');
+  stopwatch.reset();
+  stopwatch.start();
+  final response = await IsarDB.instance.embeddings();
+  stopwatch.stop();
+  dev.log(
+      'Isar: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms');
 }
 
 List<double> getRandom512DoubleList() {

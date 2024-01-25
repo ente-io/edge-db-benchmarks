@@ -1,12 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:isar/isar.dart';
 import 'package:objectbox/objectbox.dart' as ob;
 
+part 'embedding.g.dart';
+
 @ob.Entity()
+@collection
 class Embedding {
   @ob.Id(assignable: true)
   int id = 0;
+  Id isarID = Isar.autoIncrement;
 
   List<double> embedding;
   Embedding({

@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:1692403657317421579",
-      "lastPropertyId": "3:580862506301288701",
+      "lastPropertyId": "4:6441766446098598618",
       "name": "Embedding",
       "properties": [
         {
@@ -18,6 +18,11 @@
           "id": "2:3939073088744359688",
           "name": "embedding",
           "type": 29
+        },
+        {
+          "id": "4:6441766446098598618",
+          "name": "isarID",
+          "type": 6
         }
       ],
       "relations": []

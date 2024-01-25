@@ -22,7 +22,7 @@ final _entities = <ModelEntity>[
   ModelEntity(
       id: const IdUid(1, 1692403657317421579),
       name: 'Embedding',
-      lastPropertyId: const IdUid(3, 580862506301288701),
+      lastPropertyId: const IdUid(4, 6441766446098598618),
       flags: 0,
       properties: <ModelProperty>[
         ModelProperty(
@@ -34,6 +34,11 @@ final _entities = <ModelEntity>[
             id: const IdUid(2, 3939073088744359688),
             name: 'embedding',
             type: 29,
+            flags: 0),
+        ModelProperty(
+            id: const IdUid(4, 6441766446098598618),
+            name: 'isarID',
+            type: 6,
             flags: 0)
       ],
       relations: <ModelRelation>[],
@@ -90,9 +95,10 @@ ModelDefinition getObjectBoxModel() {
         },
         objectToFB: (Embedding object, fb.Builder fbb) {
           final embeddingOffset = fbb.writeListFloat64(object.embedding);
-          fbb.startTable(4);
+          fbb.startTable(5);
           fbb.addInt64(0, object.id);
           fbb.addOffset(1, embeddingOffset);
+          fbb.addInt64(3, object.isarID);
           fbb.finish(fbb.endTable());
           return object.id;
         },
@@ -103,7 +109,9 @@ ModelDefinition getObjectBoxModel() {
               const fb.ListReader<double>(fb.Float64Reader(), lazy: false)
                   .vTableGet(buffer, rootOffset, 6, []);
           final object = Embedding(embedding: embeddingParam)
-            ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0);
+            ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
+            ..isarID =
+                const fb.Int64Reader().vTableGet(buffer, rootOffset, 10, 0);
 
           return object;
         })
@@ -120,4 +128,8 @@ class Embedding_ {
   /// see [Embedding.embedding]
   static final embedding =
       QueryDoubleVectorProperty<Embedding>(_entities[0].properties[1]);
+
+  /// see [Embedding.isarID]
+  static final isarID =
+      QueryIntegerProperty<Embedding>(_entities[0].properties[2]);
 }
