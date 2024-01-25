@@ -32,6 +32,7 @@ class SqliteDB {
     final Directory documentsDirectory =
         await getApplicationDocumentsDirectory();
     final String path = join(documentsDirectory.path, databaseName);
+    log('SqliteDB path: $path');
     // Start afresh each time
     await deleteDatabase(path);
     final database = await openDatabase(path, version: 1,
