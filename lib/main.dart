@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:developer' as dev;
 
+import 'package:edge_db_benchmarks/databases/object_box_db.dart';
 import 'package:edge_db_benchmarks/databases/sqlite_db.dart';
 import 'package:edge_db_benchmarks/models/embedding.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,21 @@ Future<void> benchmarkSqlite(List<Embedding> embeddings) async {
   stopwatch.stop();
   dev.log(
       'SQLite: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms');
+}
+
+Future<void> benchmarkObjectBox(List<Embedding> embeddings) async {
+  await ObjectBoxDB.instance.init();
+  final stopwatch = Stopwatch()..start();
+  await ObjectBoxDB.instance.insertMultipleEmbeddings(embeddings);
+  stopwatch.stop();
+  dev.log(
+      'ObjectBox: $count embeddings inserted in ${stopwatch.elapsedMilliseconds} ms');
+  stopwatch.reset();
+  stopwatch.start();
+  final response = await ObjectBoxDB.instance.embeddings();
+  stopwatch.stop();
+  dev.log(
+      'ObjectBox: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms');
 }
 
 List<double> getRandom512DoubleList() {

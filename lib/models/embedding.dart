@@ -1,10 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:objectbox/objectbox.dart' as ob;
 
-part 'embedding.g.dart';
-
+@ob.Entity()
 class Embedding {
+  @ob.Id(assignable: true)
+  int id = 0;
+
   List<double> embedding;
   Embedding({
     required this.embedding,
