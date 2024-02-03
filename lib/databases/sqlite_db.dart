@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:edge_db_benchmarks/models/embedding.pb.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 class SqliteDB {
   static const databaseName = "embeddings.sqlite.db";
@@ -17,65 +17,63 @@ class SqliteDB {
 
   static final SqliteDB instance = SqliteDB._privateConstructor();
 
-  static Future<Database>? _dbFuture;
+  static Future<SqliteDatabase>? _dbFuture;
 
   Future<void> init() async {
     await _database;
     log('SqliteDB initialized');
   }
 
-  Future<Database> get _database async {
+  Future<SqliteDatabase> get _database async {
     _dbFuture ??= _initDatabase();
     return _dbFuture!;
   }
 
-  Future<Database> _initDatabase() async {
+  Future<SqliteDatabase> _initDatabase() async {
     final Directory documentsDirectory =
         await getApplicationDocumentsDirectory();
     final String path = join(documentsDirectory.path, databaseName);
     log('SqliteDB path: $path');
     // Start afresh each time
-    await deleteDatabase(path);
-    final database = await openDatabase(path, version: 1,
-        onCreate: (Database db, int version) async {
-      await db.execute(
-        'CREATE TABLE $tableName ($columnGeneratedID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $columnEmbedding BLOB)',
-      );
-    });
+    if (await File(path).exists()) {
+      await File(path).delete();
+    }
+    final migrations = SqliteMigrations()
+      ..add(SqliteMigration(
+        1,
+        (tx) async {
+          await tx.execute(
+              'CREATE TABLE $tableName ($columnGeneratedID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, $columnEmbedding BLOB)');
+        },
+      ));
+    final database = SqliteDatabase(path: path);
+    await migrations.migrate(database);
     return database;
   }
 
   Future<void> insertEmbedding(EmbeddingProto embedding) async {
-    final Database db = await _database;
-    await db.insert(
-      tableName,
-      <String, dynamic>{
-        columnEmbedding: embedding.writeToBuffer(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    final db = await _database;
+    await db.writeTransaction((tx) async {
+      await tx.execute('INSERT INTO $tableName ($columnEmbedding) values(?)',
+          [embedding.writeToBuffer()]);
+    });
   }
 
   Future<void> insertMultipleEmbeddings(List<EmbeddingProto> embeddings) async {
-    final Database db = await _database;
-    final batch = db.batch();
-    for (final embedding in embeddings) {
-      batch.insert(
-        tableName,
-        <String, dynamic>{
-          columnEmbedding: embedding.writeToBuffer(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    await batch.commit(noResult: true);
+    final db = await _database;
+    await db.writeTransaction((tx) async {
+      for (final embedding in embeddings) {
+        await tx.execute('INSERT INTO $tableName ($columnEmbedding) values(?)',
+            [embedding.writeToBuffer()]);
+      }
+    });
   }
 
   Future<List<EmbeddingProto>> embeddings() async {
-    final Database db = await _database;
-    final List<Map<String, dynamic>> maps = await db.query(tableName);
-    return List.generate(maps.length, (i) {
-      return EmbeddingProto.fromBuffer(maps[i][columnEmbedding] as Uint8List);
+    final db = await _database;
+    final result = await db.getAll('SELECT * FROM $tableName');
+    return List.generate(result.length, (i) {
+      return EmbeddingProto.fromBuffer(result[i][columnEmbedding] as Uint8List);
     });
   }
 }
