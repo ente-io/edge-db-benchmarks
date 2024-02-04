@@ -61,19 +61,32 @@ class SqliteDB {
 
   Future<void> insertMultipleEmbeddings(List<EmbeddingProto> embeddings) async {
     final db = await _database;
-    await db.writeTransaction((tx) async {
-      for (final embedding in embeddings) {
-        await tx.execute('INSERT INTO $tableName ($columnEmbedding) values(?)',
-            [embedding.writeToBuffer()]);
-      }
-    });
+    final inputs = embeddings.map((e) => [e.writeToBuffer()]).toList();
+    await db.executeBatch(
+        'INSERT INTO $tableName ($columnEmbedding) values(?)', inputs);
   }
 
   Future<List<EmbeddingProto>> embeddings() async {
+    int offset = 0;
+    List<EmbeddingProto> currentBatch;
+    final List<EmbeddingProto> results = [];
+    do {
+      currentBatch = await _fetchBatch(offset: offset);
+      offset += currentBatch.length;
+      results.addAll(currentBatch);
+    } while (currentBatch.isNotEmpty);
+    return results;
+  }
+
+  Future<List<EmbeddingProto>> _fetchBatch({int offset = 0}) async {
     final db = await _database;
-    final result = await db.getAll('SELECT * FROM $tableName');
-    return List.generate(result.length, (i) {
-      return EmbeddingProto.fromBuffer(result[i][columnEmbedding] as Uint8List);
-    });
+    final results = await db.getAll(
+      'SELECT $columnEmbedding FROM $tableName LIMIT 10000 OFFSET $offset',
+    );
+
+    return results
+        .map((row) =>
+            EmbeddingProto.fromBuffer(row[columnEmbedding] as Uint8List))
+        .toList();
   }
 }
