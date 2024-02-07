@@ -1,3 +1,7 @@
 # edge_db_benchmarks
 
-A new Flutter project.
+Install [Flutter](https://docs.flutter.dev/get-started/install).
+
+```
+flutter run
+```
