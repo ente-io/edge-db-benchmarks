@@ -5,27 +5,20 @@ import 'package:edge_db_benchmarks/databases/isar_db.dart';
 import 'package:edge_db_benchmarks/databases/object_box_db.dart';
 import 'package:edge_db_benchmarks/databases/sqlite_db.dart';
 import 'package:edge_db_benchmarks/models/embedding.dart';
-import 'package:edge_db_benchmarks/models/embedding.pb.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
   runApp(const MainApp());
 
   final embeddings = <Embedding>[];
-  final embeddingsProto = <EmbeddingProto>[];
-  for (int i = 0; i < count; i++) {
-    final randomVector = getRandom512DoubleList();
-    embeddings.add(Embedding(embedding: randomVector));
-    embeddingsProto.add(EmbeddingProto(embedding: randomVector));
-  }
-  await benchmarkSqlite(embeddingsProto);
+  await benchmarkSqlite(embeddings);
   await benchmarkObjectBox(embeddings);
   await benchmarkIsar(embeddings);
 }
 
 const count = 100000;
 
-Future<void> benchmarkSqlite(List<EmbeddingProto> embeddings) async {
+Future<void> benchmarkSqlite(List<Embedding> embeddings) async {
   await SqliteDB.instance.init();
   final stopwatch = Stopwatch()..start();
   await SqliteDB.instance.insertMultipleEmbeddings(embeddings);

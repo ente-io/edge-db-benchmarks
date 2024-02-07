@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:edge_db_benchmarks/models/embedding.dart';
 import 'package:edge_db_benchmarks/models/embedding.pb.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -59,15 +60,17 @@ class SqliteDB {
     });
   }
 
-  Future<void> insertMultipleEmbeddings(List<EmbeddingProto> embeddings) async {
+  Future<void> insertMultipleEmbeddings(List<Embedding> embeddings) async {
     final db = await _database;
-    final inputs = embeddings.map((e) => [e.writeToBuffer()]).toList();
+    final inputs = embeddings
+        .map((e) => [Float32List.fromList(e.embedding).buffer.asUint8List()])
+        .toList();
     await db.executeBatch(
         'INSERT INTO $tableName ($columnEmbedding) values(?)', inputs);
   }
 
-  Future<List<EmbeddingProto>> embeddings() async {
-    final List<EmbeddingProto> results = await _fetchAll();
+  Future<List<Embedding>> embeddings() async {
+    final List<Embedding> results = await _fetchAll();
     return results;
   }
 
@@ -83,7 +86,7 @@ class SqliteDB {
         .toList();
   }
 
-  Future<List<EmbeddingProto>> _fetchAll() async {
+  Future<List<Embedding>> _fetchAll() async {
     final db = await _database;
     final stopwatch = Stopwatch()..start();
     final results = await db.getAll(
@@ -93,10 +96,11 @@ class SqliteDB {
     log('SqliteDB fetch all took: ${stopwatch.elapsedMilliseconds} ms');
     stopwatch.reset();
     stopwatch.start();
-    final deserialzed = results
-        .map((row) =>
-            EmbeddingProto.fromBuffer(row[columnEmbedding] as Uint8List))
-        .toList();
+    final deserialzed = results.map((row) {
+      final bytes = row[columnEmbedding] as Uint8List;
+      final list = Float32List.view(bytes.buffer);
+      return Embedding(embedding: list);
+    }).toList();
     stopwatch.stop();
     log('SqliteDB deserialization took: ${stopwatch.elapsedMilliseconds} ms');
     return deserialzed;
