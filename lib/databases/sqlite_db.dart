@@ -67,14 +67,7 @@ class SqliteDB {
   }
 
   Future<List<EmbeddingProto>> embeddings() async {
-    int offset = 0;
-    List<EmbeddingProto> currentBatch;
-    final List<EmbeddingProto> results = [];
-    do {
-      currentBatch = await _fetchBatch(offset: offset);
-      offset += currentBatch.length;
-      results.addAll(currentBatch);
-    } while (currentBatch.isNotEmpty);
+    final List<EmbeddingProto> results = await _fetchAll();
     return results;
   }
 
@@ -88,5 +81,24 @@ class SqliteDB {
         .map((row) =>
             EmbeddingProto.fromBuffer(row[columnEmbedding] as Uint8List))
         .toList();
+  }
+
+  Future<List<EmbeddingProto>> _fetchAll() async {
+    final db = await _database;
+    final stopwatch = Stopwatch()..start();
+    final results = await db.getAll(
+      'SELECT $columnEmbedding FROM $tableName',
+    );
+    stopwatch.stop();
+    log('SqliteDB fetch all took: ${stopwatch.elapsedMilliseconds} ms');
+    stopwatch.reset();
+    stopwatch.start();
+    final deserialzed = results
+        .map((row) =>
+            EmbeddingProto.fromBuffer(row[columnEmbedding] as Uint8List))
+        .toList();
+    stopwatch.stop();
+    log('SqliteDB deserialization took: ${stopwatch.elapsedMilliseconds} ms');
+    return deserialzed;
   }
 }
