@@ -9,58 +9,62 @@ import 'package:flutter/material.dart';
 
 void main() async {
   runApp(const MainApp());
-
-  final embeddings = <Embedding>[];
-  await benchmarkSqlite(embeddings);
-  await benchmarkObjectBox(embeddings);
-  await benchmarkIsar(embeddings);
 }
 
 const count = 100000;
 
-Future<void> benchmarkSqlite(List<Embedding> embeddings) async {
+Future<String> benchmarkSqlite(List<Embedding> embeddings) async {
+  String result = "";
   await SqliteDB.instance.init();
   final stopwatch = Stopwatch()..start();
   await SqliteDB.instance.insertMultipleEmbeddings(embeddings);
   stopwatch.stop();
-  dev.log(
-      'SQLite: $count embeddings inserted in ${stopwatch.elapsedMilliseconds} ms');
+  result +=
+      "SQLite: $count embeddings inserted in ${stopwatch.elapsedMilliseconds} ms\n";
   stopwatch.reset();
   stopwatch.start();
   final response = await SqliteDB.instance.embeddings();
   stopwatch.stop();
-  dev.log(
-      'SQLite: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms');
+  result +=
+      "SQLite: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms\n\n";
+  dev.log(result);
+  return result;
 }
 
-Future<void> benchmarkObjectBox(List<Embedding> embeddings) async {
+Future<String> benchmarkObjectBox(List<Embedding> embeddings) async {
+  String result = "";
   await ObjectBoxDB.instance.init();
   final stopwatch = Stopwatch()..start();
   await ObjectBoxDB.instance.insertMultipleEmbeddings(embeddings);
   stopwatch.stop();
-  dev.log(
-      'ObjectBox: $count embeddings inserted in ${stopwatch.elapsedMilliseconds} ms');
+  result +=
+      "ObjectBox: $count embeddings inserted in ${stopwatch.elapsedMilliseconds} ms\n";
   stopwatch.reset();
   stopwatch.start();
   final response = await ObjectBoxDB.instance.embeddings();
   stopwatch.stop();
-  dev.log(
-      'ObjectBox: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms');
+  result +=
+      "ObjectBox: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms\n\n";
+  dev.log(result);
+  return result;
 }
 
-Future<void> benchmarkIsar(List<Embedding> embeddings) async {
+Future<String> benchmarkIsar(List<Embedding> embeddings) async {
+  String result = "";
   await IsarDB.instance.init();
   final stopwatch = Stopwatch()..start();
   await IsarDB.instance.putMany(embeddings);
   stopwatch.stop();
-  dev.log(
-      'Isar: $count embeddings inserted in ${stopwatch.elapsedMilliseconds} ms');
+  result +=
+      "Isar: $count embeddings inserted in ${stopwatch.elapsedMilliseconds} ms\n";
   stopwatch.reset();
   stopwatch.start();
   final response = await IsarDB.instance.embeddings();
   stopwatch.stop();
-  dev.log(
-      'Isar: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms');
+  result +=
+      "Isar: ${response.length} embeddings retrieved in ${stopwatch.elapsedMilliseconds} ms\n\n";
+  dev.log(result);
+  return result;
 }
 
 List<double> getRandom512DoubleList() {
@@ -72,15 +76,39 @@ List<double> getRandom512DoubleList() {
   return list;
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
   @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  String result = "";
+  @override
+  void initState() {
+    benchmark();
+    super.initState();
+  }
+
+  Future<void> benchmark() async {
+    final embeddings = <Embedding>[];
+    embeddings.addAll(List.generate(
+        count, (index) => Embedding(embedding: getRandom512DoubleList())));
+    result += await benchmarkSqlite(embeddings);
+    setState(() {});
+    result += await benchmarkObjectBox(embeddings);
+    setState(() {});
+    result += await benchmarkIsar(embeddings);
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       home: Scaffold(
         body: Center(
-          child: Text('Hello World!'),
+          child: Text(result.isEmpty ? "Benchmarking..." : result),
         ),
       ),
     );
